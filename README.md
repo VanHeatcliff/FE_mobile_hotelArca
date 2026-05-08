@@ -25,7 +25,8 @@ FE_Mobile_Hotel/
 ├── app.json          # Konfigurasi metadata Expo
 └── package.json      # Daftar dependensi dan script proyek
 ```
-🛠️ Getting Started
+## 🛠️ Getting Started
+
 Ikuti langkah-langkah di bawah ini untuk menjalankan proyek di lingkungan pengembangan lokal:
 1. Pastikan Anda telah menginstal Node.js dan aplikasi Expo Go di perangkat Android/iOS.
 2. Jalankan perintah berikut di terminal: npm install
