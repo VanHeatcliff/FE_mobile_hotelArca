@@ -30,4 +30,4 @@ FE_Mobile_Hotel/
 Ikuti langkah-langkah di bawah ini untuk menjalankan proyek di lingkungan pengembangan lokal:
 1. Pastikan Anda telah menginstal Node.js dan aplikasi Expo Go di perangkat Android/iOS.
 2. Jalankan perintah berikut di terminal: npm install
-3. Gunakan perintah ini untuk memulai Metro Bundler: npx expo start
+3. Gunakan perintah ini untuk memulai Metro Bundler: npx expo start / npm start
