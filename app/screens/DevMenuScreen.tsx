@@ -14,17 +14,17 @@ export default function DevMenuScreen() {
       </View>
 
       <View style={styles.content}>
-        
+
         {/* Customer Button */}
-        <TouchableOpacity 
+        <TouchableOpacity
           style={[styles.roleButton, role === 'customer' && styles.activeRoleButton]}
           onPress={() => setRole('customer')}
         >
           <View style={styles.iconContainer}>
-            <Ionicons 
-              name="person" 
-              size={32} 
-              color={role === 'customer' ? '#FFFFFF' : '#1A1A1A'} 
+            <Ionicons
+              name="person"
+              size={32}
+              color={role === 'customer' ? '#FFFFFF' : '#1A1A1A'}
             />
           </View>
           <View style={styles.roleTextContainer}>
@@ -43,15 +43,15 @@ export default function DevMenuScreen() {
         </TouchableOpacity>
 
         {/* Staff Button */}
-        <TouchableOpacity 
+        <TouchableOpacity
           style={[styles.roleButton, role === 'staff' && styles.activeRoleButton]}
           onPress={() => setRole('staff')}
         >
           <View style={styles.iconContainer}>
-            <Ionicons 
-              name="id-card" 
-              size={32} 
-              color={role === 'staff' ? '#FFFFFF' : '#1A1A1A'} 
+            <Ionicons
+              name="id-card"
+              size={32}
+              color={role === 'staff' ? '#FFFFFF' : '#1A1A1A'}
             />
           </View>
           <View style={styles.roleTextContainer}>
@@ -63,6 +63,33 @@ export default function DevMenuScreen() {
             </Text>
           </View>
           {role === 'staff' && (
+            <View style={styles.activeBadge}>
+              <Text style={styles.activeBadgeText}>Active</Text>
+            </View>
+          )}
+        </TouchableOpacity>
+
+        {/* Owner/Admin Button */}
+        <TouchableOpacity
+          style={[styles.roleButton, role === 'owner' && styles.activeRoleButton]}
+          onPress={() => setRole('owner')}
+        >
+          <View style={styles.iconContainer}>
+            <Ionicons
+              name="business"
+              size={32}
+              color={role === 'owner' ? '#FFFFFF' : '#1A1A1A'}
+            />
+          </View>
+          <View style={styles.roleTextContainer}>
+            <Text style={[styles.roleTitle, role === 'owner' && styles.activeRoleText]}>
+              Simulate Owner View
+            </Text>
+            <Text style={[styles.roleDesc, role === 'owner' && styles.activeRoleTextSecondary]}>
+              View the executive management dashboard
+            </Text>
+          </View>
+          {role === 'owner' && (
             <View style={styles.activeBadge}>
               <Text style={styles.activeBadgeText}>Active</Text>
             </View>

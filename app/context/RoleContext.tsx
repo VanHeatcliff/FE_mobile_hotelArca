@@ -1,6 +1,6 @@
 import React, { createContext, useState, useContext, ReactNode } from 'react';
 
-type Role = 'customer' | 'staff';
+type Role = 'customer' | 'staff' | 'owner';
 
 interface RoleContextType {
   role: Role;
@@ -11,11 +11,15 @@ interface RoleContextType {
 const RoleContext = createContext<RoleContextType | undefined>(undefined);
 
 export const RoleProvider = ({ children }: { children: ReactNode }) => {
-  // Set default to 'staff' initially for easier testing of the new UI
-  const [role, setRole] = useState<Role>('staff');
+  // Set default to 'owner' initially for easier testing of the new UI
+  const [role, setRole] = useState<Role>('owner');
 
   const toggleRole = () => {
-    setRole((prevRole) => (prevRole === 'customer' ? 'staff' : 'customer'));
+    setRole((prevRole) => {
+      if (prevRole === 'customer') return 'staff';
+      if (prevRole === 'staff') return 'owner';
+      return 'customer';
+    });
   };
 
   return (
