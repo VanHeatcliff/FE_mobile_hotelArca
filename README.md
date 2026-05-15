@@ -15,12 +15,12 @@ Proyek ini mengikuti arsitektur folder yang modular untuk mempermudah skalabilit
 ```text
 FE_Mobile_Hotel/
 ├── src/
-│   ├── assets/       # Media (Gambar, Ikon, Custom Fonts)
 │   ├── components/   # UI Komponen reusable (Button, Card, Input field)
 │   ├── screens/      # Halaman utama aplikasi (Home, Booking, Detail, Profile)
 │   ├── navigation/   # Konfigurasi Routing & Stack/Tab Navigation
 │   ├── services/     # Integrasi API (Axios/Fetch) ke backend Laravel & Gemini
 │   └── utils/        # Fungsi helper, format mata uang, & tema warna
+├── assets            # Media (Gambar, Ikon, Custom Fonts)
 ├── App.js            # Entry point utama aplikasi
 ├── app.json          # Konfigurasi metadata Expo
 └── package.json      # Daftar dependensi dan script proyek
