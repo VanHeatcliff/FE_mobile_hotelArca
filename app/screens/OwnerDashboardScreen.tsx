@@ -1,13 +1,15 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Dimensions, TouchableOpacity } from 'react-native';
 import { LineChart } from 'react-native-chart-kit';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useRole } from '../context/RoleContext';
 
 const { width } = Dimensions.get('window');
 
 const OwnerDashboardScreen = () => {
   const insets = useSafeAreaInsets();
+  const { logout } = useRole();
 
   const chartData = {
     labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
@@ -22,7 +24,12 @@ const OwnerDashboardScreen = () => {
 
   return (
     <ScrollView style={[styles.container, { paddingTop: insets.top }]} contentContainerStyle={styles.content}>
-      <Text style={styles.headerTitle}>Executive Dashboard</Text>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+        <Text style={[styles.headerTitle, { marginBottom: 0 }]}>Executive Dashboard</Text>
+        <TouchableOpacity onPress={logout}>
+          <Ionicons name="log-out-outline" size={28} color="#d4af37" />
+        </TouchableOpacity>
+      </View>
       
       <View style={styles.chartContainer}>
         <Text style={styles.chartTitle}>Monthly Revenue</Text>

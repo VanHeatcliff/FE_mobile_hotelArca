@@ -1,15 +1,22 @@
 import React from 'react';
 import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useRole } from '../context/RoleContext';
 
 export default function StaffDashboardScreen() {
+  const { logout } = useRole();
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Current Operations</Text>
-        <TouchableOpacity>
-          <Ionicons name="notifications-outline" size={24} color="#1A1A1A" />
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <TouchableOpacity style={{ marginRight: 16 }}>
+            <Ionicons name="notifications-outline" size={24} color="#1A1A1A" />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={logout}>
+            <Ionicons name="log-out-outline" size={24} color="#D9534F" />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
