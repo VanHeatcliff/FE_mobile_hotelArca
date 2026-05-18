@@ -12,7 +12,7 @@ import { useRole } from '../context/RoleContext';
 const Tab = createBottomTabNavigator();
 
 export default function OwnerTabNavigator() {
-  const { toggleRole } = useRole();
+  const { logout } = useRole();
 
   return (
     <Tab.Navigator
@@ -41,8 +41,8 @@ export default function OwnerTabNavigator() {
           fontWeight: '600',
         },
         headerRight: () => (
-          <TouchableOpacity onPress={toggleRole} style={{ marginRight: 16 }}>
-            <Ionicons name="swap-horizontal-outline" size={24} color="#d4af37" />
+          <TouchableOpacity onPress={logout} style={{ marginRight: 16 }}>
+            <Ionicons name="log-out-outline" size={24} color="#d4af37" />
           </TouchableOpacity>
         ),
       })}

@@ -5,8 +5,6 @@ import { Ionicons } from '@expo/vector-icons';
 import StaffDashboardScreen from '../screens/StaffDashboardScreen';
 import StaffValidationScreen from '../screens/StaffValidationScreen';
 import StaffChatReviewsScreen from '../screens/StaffChatReviewsScreen';
-import DevMenuScreen from '../screens/DevMenuScreen';
-
 const Tab = createBottomTabNavigator();
 
 export default function StaffTabNavigator() {
@@ -23,8 +21,6 @@ export default function StaffTabNavigator() {
             iconName = focused ? 'checkmark-circle' : 'checkmark-circle-outline';
           } else if (route.name === 'Chat/Reviews') {
             iconName = focused ? 'chatbubbles' : 'chatbubbles-outline';
-          } else if (route.name === 'Admin/Dev') {
-            iconName = focused ? 'construct' : 'construct-outline';
           }
 
           return <Ionicons name={iconName} size={size} color={color} />;
@@ -47,7 +43,6 @@ export default function StaffTabNavigator() {
       <Tab.Screen name="Dashboard" component={StaffDashboardScreen} />
       <Tab.Screen name="Validate" component={StaffValidationScreen} />
       <Tab.Screen name="Chat/Reviews" component={StaffChatReviewsScreen} />
-      <Tab.Screen name="Admin/Dev" component={DevMenuScreen} />
     </Tab.Navigator>
   );
 }

@@ -5,9 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import HomeScreen from '../screens/HomeScreen';
 import BookingsScreen from '../screens/BookingsScreen';
 import ChatScreen from '../screens/ChatScreen';
-import AuthScreen from '../screens/AuthScreen';
-import DevMenuScreen from '../screens/DevMenuScreen';
-
+import ProfileStackNavigator from './ProfileStackNavigator';
 const Tab = createBottomTabNavigator();
 
 export default function TabNavigator() {
@@ -26,8 +24,6 @@ export default function TabNavigator() {
             iconName = focused ? 'chatbubble-ellipses' : 'chatbubble-ellipses-outline';
           } else if (route.name === 'Profile') {
             iconName = focused ? 'person' : 'person-outline';
-          } else if (route.name === 'Dev') {
-            iconName = focused ? 'construct' : 'construct-outline';
           }
 
           return <Ionicons name={iconName} size={size} color={color} />;
@@ -50,8 +46,7 @@ export default function TabNavigator() {
       <Tab.Screen name="Home" component={HomeScreen} />
       <Tab.Screen name="Bookings" component={BookingsScreen} />
       <Tab.Screen name="Chat" component={ChatScreen} />
-      <Tab.Screen name="Profile" component={AuthScreen} />
-      <Tab.Screen name="Dev" component={DevMenuScreen} />
+      <Tab.Screen name="Profile" component={ProfileStackNavigator} />
     </Tab.Navigator>
   );
 }
