@@ -5,7 +5,7 @@ A mobile-based hotel reservation application built using **React Native** and **
 
 - **Framework:** React Native (Expo SDK)
 - **Language:** JavaScript / React
-- **Logic & Recommendations:** Gemini API Integration (planned)
+- **Logic & Recommendations:** Gemini API Integration
 - **UI Architecture:** Component-based with Modular Navigation
 
 ## 📁 Project Structure
