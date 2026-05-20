@@ -31,3 +31,4 @@ Ikuti langkah-langkah di bawah ini untuk menjalankan proyek di lingkungan pengem
 1. Pastikan Anda telah menginstal Node.js dan aplikasi Expo Go di perangkat Android/iOS.
 2. Jalankan perintah berikut di terminal: npm install
 3. Gunakan perintah ini untuk memulai Metro Bundler: npx expo start / npm start
+4. Scan barcode menggunakan aplikasi Expo Go pada Android atau iOS
