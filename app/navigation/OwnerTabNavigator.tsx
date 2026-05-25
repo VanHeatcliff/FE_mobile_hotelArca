@@ -26,19 +26,36 @@ export default function OwnerTabNavigator() {
 
           return <Ionicons name={iconName as any} size={size} color={color} />;
         },
-        tabBarActiveTintColor: '#d4af37', // Gold
-        tabBarInactiveTintColor: '#aaaaaa',
+        tabBarActiveTintColor: '#D4AF37',
+        tabBarInactiveTintColor: '#8C7B6B',
         tabBarStyle: {
-          backgroundColor: '#222222', // Dark Charcoal
-          borderTopColor: '#333333',
+          backgroundColor: '#FBF8F4',
+          borderTopColor: '#F0EBE3',
           borderTopWidth: 1,
+          paddingBottom: 8,
+          paddingTop: 8,
+          height: 62,
+          elevation: 8,
+          shadowColor: '#8B5E3C',
+          shadowOffset: { width: 0, height: -3 },
+          shadowOpacity: 0.06,
+          shadowRadius: 8,
+        },
+        tabBarLabelStyle: {
+          fontSize: 11,
+          fontWeight: '600',
+          letterSpacing: 0.3,
         },
         headerStyle: {
-          backgroundColor: '#222222',
+          backgroundColor: '#FBF8F4',
+          elevation: 0,
+          shadowOpacity: 0,
+          borderBottomWidth: 1,
+          borderBottomColor: '#F0EBE3',
         },
-        headerTintColor: '#ffffff',
+        headerTintColor: '#3D2B1F',
         headerTitleStyle: {
-          fontWeight: '600',
+          fontWeight: '700',
         },
         headerRight: () => (
           <TouchableOpacity onPress={logout} style={{ marginRight: 16 }}>

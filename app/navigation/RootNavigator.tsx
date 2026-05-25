@@ -6,9 +6,19 @@ import StaffTabNavigator from './StaffTabNavigator';
 import OwnerTabNavigator from './OwnerTabNavigator';
 import AuthScreen from '../screens/AuthScreen';
 import RegisterScreen from '../screens/RegisterScreen';
+import RoomListScreen from '../screens/RoomListScreen';
 import { useRole } from '../context/RoleContext';
 
 const Stack = createNativeStackNavigator();
+
+function CustomerStack() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="MainTabs" component={TabNavigator} />
+      <Stack.Screen name="RoomList" component={RoomListScreen} />
+    </Stack.Navigator>
+  );
+}
 
 export default function RootNavigator() {
   const { role } = useRole();
@@ -25,7 +35,7 @@ export default function RootNavigator() {
       ) : role === 'staff' ? (
         <StaffTabNavigator />
       ) : (
-        <TabNavigator />
+        <CustomerStack />
       )}
     </NavigationContainer>
   );
