@@ -25,18 +25,25 @@ export default function StaffTabNavigator() {
 
           return <Ionicons name={iconName} size={size} color={color} />;
         },
-        tabBarActiveTintColor: '#D9534F', // Terracotta accent
-        tabBarInactiveTintColor: '#A0A0A0',
+        tabBarActiveTintColor: '#8B5E3C',
+        tabBarInactiveTintColor: '#B5A897',
         tabBarStyle: {
           backgroundColor: '#FFFFFF',
-          borderTopColor: '#F4F4F4',
+          borderTopColor: '#F0EBE3',
+          borderTopWidth: 1,
           paddingBottom: 8,
           paddingTop: 8,
-          height: 60,
+          height: 62,
+          elevation: 8,
+          shadowColor: '#8B5E3C',
+          shadowOffset: { width: 0, height: -3 },
+          shadowOpacity: 0.06,
+          shadowRadius: 8,
         },
         tabBarLabelStyle: {
-          fontSize: 12,
-          fontWeight: '500',
+          fontSize: 11,
+          fontWeight: '600',
+          letterSpacing: 0.3,
         }
       })}
     >
