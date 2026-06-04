@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
 
 export default function BookingsScreen() {
   const [activeTab, setActiveTab] = useState('Aktif');
+  const navigation = useNavigation<any>();
 
   return (
     <SafeAreaView style={styles.container}>
@@ -43,7 +45,7 @@ export default function BookingsScreen() {
             </View>
 
             <View style={styles.actionButtons}>
-              <TouchableOpacity style={styles.payButton}>
+              <TouchableOpacity style={styles.payButton} onPress={() => navigation.navigate('Payment')}>
                 <Text style={styles.payButtonText}>Bayar Sekarang</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.cancelButton}>
