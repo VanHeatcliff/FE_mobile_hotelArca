@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView, Image } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView, Image, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -12,6 +12,22 @@ export default function AuthScreen() {
   const { setRole } = useRole();
 
   const handleLogin = () => {
+    if (!email || !password) {
+      Alert.alert('Error', 'Email dan password tidak boleh kosong');
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      Alert.alert('Error', 'Format email tidak valid');
+      return;
+    }
+
+    if (password.length < 6) {
+      Alert.alert('Error', 'Password minimal 6 karakter');
+      return;
+    }
+
     // Simple login simulation based on email
     const emailLower = email.toLowerCase();
     if (emailLower.includes('admin') || emailLower.includes('owner')) {

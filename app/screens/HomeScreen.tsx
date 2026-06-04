@@ -4,12 +4,39 @@ import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 
 const { width } = Dimensions.get('window');
 
 export default function HomeScreen() {
   const [aiQuery, setAiQuery] = useState('');
   const navigation = useNavigation<any>();
+
+  const [checkInDate, setCheckInDate] = useState(new Date());
+  const [checkOutDate, setCheckOutDate] = useState(new Date(new Date().getTime() + 24 * 60 * 60 * 1000));
+  const [showCheckInPicker, setShowCheckInPicker] = useState(false);
+  const [showCheckOutPicker, setShowCheckOutPicker] = useState(false);
+
+  const onCheckInChange = (event: any, selectedDate?: Date) => {
+    setShowCheckInPicker(Platform.OS === 'ios');
+    if (selectedDate) {
+      setCheckInDate(selectedDate);
+      if (selectedDate >= checkOutDate) {
+        setCheckOutDate(new Date(selectedDate.getTime() + 24 * 60 * 60 * 1000));
+      }
+    }
+  };
+
+  const onCheckOutChange = (event: any, selectedDate?: Date) => {
+    setShowCheckOutPicker(Platform.OS === 'ios');
+    if (selectedDate) {
+      setCheckOutDate(selectedDate);
+    }
+  };
+
+  const formatDate = (date: Date) => {
+    return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -72,22 +99,44 @@ export default function HomeScreen() {
           <View style={styles.bookingCard}>
             <View style={styles.goldAccentLine} />
             <View style={styles.inputRow}>
-              <View style={styles.inputGroup}>
+              <TouchableOpacity style={styles.inputGroup} onPress={() => setShowCheckInPicker(true)}>
                 <View style={styles.inputLabelRow}>
                   <Ionicons name="calendar-outline" size={14} color="#B08968" />
                   <Text style={styles.inputLabel}>Check-in</Text>
                 </View>
-                <Text style={styles.inputValue}>12 Mei 2026</Text>
-              </View>
+                <Text style={styles.inputValue}>{formatDate(checkInDate)}</Text>
+              </TouchableOpacity>
+              
               <View style={styles.divider} />
-              <View style={styles.inputGroup}>
+              
+              <TouchableOpacity style={styles.inputGroup} onPress={() => setShowCheckOutPicker(true)}>
                 <View style={styles.inputLabelRow}>
                   <Ionicons name="calendar-outline" size={14} color="#B08968" />
                   <Text style={styles.inputLabel}>Check-out</Text>
                 </View>
-                <Text style={styles.inputValue}>14 Mei 2026</Text>
-              </View>
+                <Text style={styles.inputValue}>{formatDate(checkOutDate)}</Text>
+              </TouchableOpacity>
             </View>
+
+            {showCheckInPicker && (
+              <DateTimePicker
+                value={checkInDate}
+                mode="date"
+                display="default"
+                onChange={onCheckInChange}
+                minimumDate={new Date()}
+              />
+            )}
+            
+            {showCheckOutPicker && (
+              <DateTimePicker
+                value={checkOutDate}
+                mode="date"
+                display="default"
+                onChange={onCheckOutChange}
+                minimumDate={new Date(checkInDate.getTime() + 24 * 60 * 60 * 1000)}
+              />
+            )}
             <View style={styles.inputRow}>
               <View style={styles.inputGroup}>
                 <View style={styles.inputLabelRow}>

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView, Image } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView, Image, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -15,13 +15,29 @@ export default function RegisterScreen() {
   const { setRole } = useRole();
 
   const handleRegister = () => {
-    // Basic simulation: log them in as customer after registering
-    if (email && password && password === confirmPassword) {
-      setRole('customer');
-    } else {
-      // In a real app, handle error here
-      console.warn('Please fill all fields correctly');
+    if (!name || !email || !password || !confirmPassword) {
+      Alert.alert('Error', 'Semua field tidak boleh kosong');
+      return;
     }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      Alert.alert('Error', 'Format email tidak valid');
+      return;
+    }
+
+    if (password.length < 6) {
+      Alert.alert('Error', 'Password minimal 6 karakter');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      Alert.alert('Error', 'Password dan Konfirmasi Password tidak cocok');
+      return;
+    }
+
+    // Basic simulation: log them in as customer after registering
+    setRole('customer');
   };
 
   return (
