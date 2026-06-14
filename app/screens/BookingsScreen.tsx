@@ -1,11 +1,92 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { getBookings, deleteBooking, Booking } from '../services/bookingService';
+import { useRole } from '../context/RoleContext';
 
 export default function BookingsScreen() {
   const [activeTab, setActiveTab] = useState('Aktif');
   const navigation = useNavigation<any>();
+  const { user } = useRole();
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [cancellingId, setCancellingId] = useState<number | null>(null);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchBookings();
+    }, [])
+  );
+
+  const fetchBookings = async () => {
+    setLoading(true);
+    try {
+      const data = await getBookings();
+      const all = Array.isArray(data) ? data : [];
+      // Filter bookings for current customer
+      const myBookings = user ? all.filter(b => b.id_customer === user.id) : all;
+      setBookings(myBookings);
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'Gagal memuat data pemesanan');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCancel = (booking: Booking) => {
+    Alert.alert(
+      'Batalkan Pesanan',
+      'Apakah Anda yakin ingin membatalkan pesanan ini?',
+      [
+        { text: 'Tidak', style: 'cancel' },
+        {
+          text: 'Ya, Batalkan',
+          style: 'destructive',
+          onPress: async () => {
+            setCancellingId(booking.id_booking);
+            try {
+              await deleteBooking(booking.id_booking);
+              Alert.alert('Berhasil', 'Pesanan berhasil dibatalkan');
+              fetchBookings();
+            } catch (error: any) {
+              Alert.alert('Gagal', error.message || 'Gagal membatalkan pesanan');
+            } finally {
+              setCancellingId(null);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const formatDate = (dateStr: string) => {
+    return new Date(dateStr).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+  };
+
+  const formatPrice = (price: number) => 'Rp ' + price.toLocaleString('id-ID');
+
+  const activeBookings = bookings.filter(b => b.status_payment === 'pending');
+  const historyBookings = bookings.filter(b => b.status_payment !== 'pending');
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'pending': return 'Menunggu Pembayaran';
+      case 'paid': return 'Lunas';
+      case 'cancelled': return 'Dibatalkan';
+      default: return status;
+    }
+  };
+
+  const getStatusStyle = (status: string) => {
+    switch (status) {
+      case 'paid': return { bg: '#E8F8EF', color: '#27AE60' };
+      case 'cancelled': return { bg: '#FDECEC', color: '#E74C3C' };
+      default: return { bg: '#FFF3E0', color: '#F57C00' };
+    }
+  };
+
+  const displayBookings = activeTab === 'Aktif' ? activeBookings : historyBookings;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -28,37 +109,60 @@ export default function BookingsScreen() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={styles.listContainer}>
-        {activeTab === 'Aktif' ? (
-          <View style={styles.card}>
-            <View style={styles.cardHeader}>
-              <Text style={styles.roomType}>Deluxe Ocean View</Text>
-              <View style={styles.statusBadge}>
-                <Text style={styles.statusText}>Menunggu Pembayaran</Text>
-              </View>
+      {loading ? (
+        <ActivityIndicator size="large" color="#8B5E3C" style={{ marginTop: 60 }} />
+      ) : (
+        <ScrollView contentContainerStyle={styles.listContainer}>
+          {displayBookings.length === 0 ? (
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>
+                {activeTab === 'Aktif' ? 'Tidak ada pemesanan aktif.' : 'Belum ada riwayat pesanan.'}
+              </Text>
             </View>
-            <Text style={styles.dateText}>12 Mei 2026 - 14 Mei 2026</Text>
-            
-            <View style={styles.priceContainer}>
-              <Text style={styles.priceLabel}>Total Harga</Text>
-              <Text style={styles.priceValue}>Rp 2.450.000</Text>
-            </View>
+          ) : (
+            displayBookings.map((booking) => {
+              const statusStyle = getStatusStyle(booking.status_payment);
+              return (
+                <View key={booking.id_booking} style={styles.card}>
+                  <View style={styles.cardHeader}>
+                    <Text style={styles.roomType}>Kamar #{booking.id_room}</Text>
+                    <View style={[styles.statusBadge, { backgroundColor: statusStyle.bg }]}>
+                      <Text style={[styles.statusText, { color: statusStyle.color }]}>{getStatusLabel(booking.status_payment)}</Text>
+                    </View>
+                  </View>
+                  <Text style={styles.dateText}>
+                    {formatDate(booking.date_in)} - {formatDate(booking.date_out)}
+                  </Text>
+                  
+                  <View style={styles.priceContainer}>
+                    <Text style={styles.priceLabel}>Total Harga</Text>
+                    <Text style={styles.priceValue}>{formatPrice(booking.total_payment)}</Text>
+                  </View>
 
-            <View style={styles.actionButtons}>
-              <TouchableOpacity style={styles.payButton} onPress={() => navigation.navigate('Payment')}>
-                <Text style={styles.payButtonText}>Bayar Sekarang</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.cancelButton}>
-                <Text style={styles.cancelButtonText}>Batalkan Pesanan</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        ) : (
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>Belum ada riwayat pesanan.</Text>
-          </View>
-        )}
-      </ScrollView>
+                  {booking.status_payment === 'pending' && (
+                    <View style={styles.actionButtons}>
+                      <TouchableOpacity style={styles.payButton} onPress={() => navigation.navigate('Payment', { booking })}>
+                        <Text style={styles.payButtonText}>Bayar Sekarang</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity 
+                        style={styles.cancelButton} 
+                        onPress={() => handleCancel(booking)}
+                        disabled={cancellingId === booking.id_booking}
+                      >
+                        {cancellingId === booking.id_booking ? (
+                          <ActivityIndicator size="small" color="#D32F2F" />
+                        ) : (
+                          <Text style={styles.cancelButtonText}>Batalkan Pesanan</Text>
+                        )}
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                </View>
+              );
+            })
+          )}
+        </ScrollView>
+      )}
     </SafeAreaView>
   );
 }

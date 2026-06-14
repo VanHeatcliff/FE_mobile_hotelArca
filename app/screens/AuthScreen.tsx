@@ -1,17 +1,19 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView, Image, Alert } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView, Image, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useRole } from '../context/RoleContext';
+import { login } from '../services/authService';
 
 export default function AuthScreen() {
   const navigation = useNavigation<any>();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const { setRole } = useRole();
+  const [loading, setLoading] = useState(false);
+  const { setAuth } = useRole();
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     if (!email || !password) {
       Alert.alert('Error', 'Email dan password tidak boleh kosong');
       return;
@@ -28,14 +30,23 @@ export default function AuthScreen() {
       return;
     }
 
-    // Simple login simulation based on email
+    // Determine role based on email pattern for the login request
     const emailLower = email.toLowerCase();
+    let role: 'customer' | 'owner' | 'staff' = 'customer';
     if (emailLower.includes('admin') || emailLower.includes('owner')) {
-      setRole('owner');
+      role = 'owner';
     } else if (emailLower.includes('staff')) {
-      setRole('staff');
-    } else {
-      setRole('customer');
+      role = 'staff';
+    }
+
+    setLoading(true);
+    try {
+      const data = await login(email, password, role);
+      setAuth(data.token, data.user);
+    } catch (error: any) {
+      Alert.alert('Login Gagal', error.message || 'Terjadi kesalahan saat login');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -65,6 +76,7 @@ export default function AuthScreen() {
                 autoCapitalize="none"
                 value={email}
                 onChangeText={setEmail}
+                editable={!loading}
               />
             </View>
 
@@ -76,6 +88,7 @@ export default function AuthScreen() {
                 secureTextEntry
                 value={password}
                 onChangeText={setPassword}
+                editable={!loading}
               />
             </View>
 
@@ -83,8 +96,12 @@ export default function AuthScreen() {
               <Text style={styles.forgotPasswordText}>Lupa Password?</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
-              <Text style={styles.loginButtonText}>Masuk</Text>
+            <TouchableOpacity style={[styles.loginButton, loading && { opacity: 0.7 }]} onPress={handleLogin} disabled={loading}>
+              {loading ? (
+                <ActivityIndicator color="#FFF" />
+              ) : (
+                <Text style={styles.loginButtonText}>Masuk</Text>
+              )}
             </TouchableOpacity>
 
             <View style={styles.registerContainer}>
