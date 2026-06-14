@@ -1,21 +1,71 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, TextInput, Platform, Dimensions } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, TextInput, Platform, Dimensions, ActivityIndicator, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { getRoomTypes, RoomType } from '../services/roomService';
+import { getReviews, Review } from '../services/reviewService';
+import { getAiRecommendation } from '../services/aiService';
+import { useRole } from '../context/RoleContext';
 
 const { width } = Dimensions.get('window');
 
+const formatPrice = (price: number) => {
+  return 'Rp ' + price.toLocaleString('id-ID');
+};
+
 export default function HomeScreen() {
   const [aiQuery, setAiQuery] = useState('');
+  const [aiReply, setAiReply] = useState('');
+  const [aiLoading, setAiLoading] = useState(false);
   const navigation = useNavigation<any>();
+  const { user } = useRole();
 
   const [checkInDate, setCheckInDate] = useState(new Date());
   const [checkOutDate, setCheckOutDate] = useState(new Date(new Date().getTime() + 24 * 60 * 60 * 1000));
   const [showCheckInPicker, setShowCheckInPicker] = useState(false);
   const [showCheckOutPicker, setShowCheckOutPicker] = useState(false);
+
+  // API data
+  const [roomTypes, setRoomTypes] = useState<RoomType[]>([]);
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [loadingData, setLoadingData] = useState(true);
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    setLoadingData(true);
+    try {
+      const [rtData, rvData] = await Promise.all([
+        getRoomTypes().catch(() => []),
+        getReviews().catch(() => []),
+      ]);
+      setRoomTypes(Array.isArray(rtData) ? rtData : []);
+      setReviews(Array.isArray(rvData) ? rvData : []);
+    } catch {
+      // Silently fail — show empty
+    } finally {
+      setLoadingData(false);
+    }
+  };
+
+  const handleAiSend = async () => {
+    if (!aiQuery.trim()) return;
+    setAiLoading(true);
+    setAiReply('');
+    try {
+      const data = await getAiRecommendation(aiQuery);
+      setAiReply(data.reply);
+    } catch (error: any) {
+      Alert.alert('AI Error', error.message || 'Gagal mendapatkan rekomendasi');
+    } finally {
+      setAiLoading(false);
+    }
+  };
 
   const onCheckInChange = (event: any, selectedDate?: Date) => {
     setShowCheckInPicker(Platform.OS === 'ios');
@@ -37,6 +87,33 @@ export default function HomeScreen() {
   const formatDate = (date: Date) => {
     return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
   };
+
+  // Room type images (fallback mapping since API doesn't return images)
+  const roomTypeImages: Record<string, string> = {
+    'VIP': 'https://images.unsplash.com/photo-1590490360182-c33d57733427?q=80&w=600&auto=format&fit=crop',
+    'Suite': 'https://images.unsplash.com/photo-1590490360182-c33d57733427?q=80&w=600&auto=format&fit=crop',
+    'Deluxe': 'https://images.unsplash.com/photo-1566665797739-1674de7a421a?q=80&w=600&auto=format&fit=crop',
+    'Standard': 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?q=80&w=600&auto=format&fit=crop',
+    'Superior': 'https://images.unsplash.com/photo-1595576508898-0ad5c879a061?q=80&w=600&auto=format&fit=crop',
+    'Family': 'https://images.unsplash.com/photo-1611892440504-42a792e24d32?q=80&w=600&auto=format&fit=crop',
+  };
+
+  const getRoomImage = (name: string) => {
+    for (const key of Object.keys(roomTypeImages)) {
+      if (name.toLowerCase().includes(key.toLowerCase())) {
+        return roomTypeImages[key];
+      }
+    }
+    return 'https://images.unsplash.com/photo-1566665797739-1674de7a421a?q=80&w=600&auto=format&fit=crop';
+  };
+
+  const getRecommendedRoomType = () => {
+    if (!aiReply || roomTypes.length === 0) return null;
+    const replyLower = aiReply.toLowerCase();
+    return roomTypes.find(rt => replyLower.includes(rt.name.toLowerCase()));
+  };
+
+  const recommendedRoomType = getRecommendedRoomType();
 
   return (
     <SafeAreaView style={styles.container}>
@@ -77,7 +154,7 @@ export default function HomeScreen() {
           >
             <View style={styles.heroContent}>
               <View style={styles.heroTextArea}>
-                <Text style={styles.heroGreeting}>Selamat Datang! 🌟</Text>
+                <Text style={styles.heroGreeting}>Selamat Datang{user ? `, ${user.name}` : ''} 🌟</Text>
                 <Text style={styles.heroMessage}>Temukan pengalaman menginap terbaik di Hotel Arca</Text>
               </View>
               <View style={styles.heroDecor}>
@@ -146,7 +223,7 @@ export default function HomeScreen() {
                 <Text style={styles.inputValue}>2 Dewasa, 1 Kamar</Text>
               </View>
             </View>
-            <TouchableOpacity style={styles.searchButton} activeOpacity={0.85} onPress={() => navigation.navigate('RoomList')}>
+            <TouchableOpacity style={styles.searchButton} activeOpacity={0.85} onPress={() => navigation.navigate('RoomList', { checkIn: checkInDate.toISOString(), checkOut: checkOutDate.toISOString() })}>
               <LinearGradient
                 colors={['#8B5E3C', '#A0724E']}
                 start={{ x: 0, y: 0 }}
@@ -183,15 +260,50 @@ export default function HomeScreen() {
                 <Text style={styles.aiBadgeText}>Powered by AI</Text>
               </View>
             </View>
-            <TouchableOpacity style={styles.aiButton} activeOpacity={0.8}>
+            <TouchableOpacity style={styles.aiButton} activeOpacity={0.8} onPress={handleAiSend} disabled={aiLoading}>
               <LinearGradient
                 colors={['#D4AF37', '#C49B30']}
                 style={styles.aiButtonGradient}
               >
-                <Ionicons name="send" size={14} color="#FFF" />
+                {aiLoading ? (
+                  <ActivityIndicator size="small" color="#FFF" />
+                ) : (
+                  <Ionicons name="send" size={14} color="#FFF" />
+                )}
               </LinearGradient>
             </TouchableOpacity>
           </View>
+          {aiReply ? (
+            <View style={styles.aiReplyCard}>
+              <Text style={styles.aiReplyText}>{aiReply}</Text>
+              {recommendedRoomType && (
+                <View style={[styles.roomCard, { marginTop: 16, marginBottom: 0, borderWidth: 1, borderColor: '#D4AF37' }]}>
+                  <View style={styles.roomImageContainer}>
+                    <Image source={{ uri: getRoomImage(recommendedRoomType.name) }} style={styles.roomImage} />
+                    <LinearGradient colors={['transparent', 'rgba(0,0,0,0.5)']} style={styles.roomImageOverlay} />
+                    <View style={styles.roomBadge}>
+                      <Ionicons name="diamond" size={10} color="#FFF" />
+                      <Text style={styles.roomBadgeText}>{recommendedRoomType.name.toUpperCase()}</Text>
+                    </View>
+                  </View>
+                  <View style={styles.roomInfo}>
+                    <Text style={styles.roomTitle}>{recommendedRoomType.name}</Text>
+                    <Text style={styles.roomDesc} numberOfLines={2}>{recommendedRoomType.description}</Text>
+                    <View style={styles.priceContainer}>
+                      <Text style={styles.roomPrice}>{formatPrice(recommendedRoomType.price)}</Text>
+                      <Text style={styles.perNight}>/malam</Text>
+                    </View>
+                    <TouchableOpacity 
+                      style={{ marginTop: 16, backgroundColor: '#D4AF37', paddingVertical: 12, borderRadius: 12, alignItems: 'center' }}
+                      onPress={() => navigation.navigate('RoomList', { checkIn: checkInDate.toISOString(), checkOut: checkOutDate.toISOString(), filter: recommendedRoomType.name })}
+                    >
+                      <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: 14 }}>Booking Kamar Ini</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              )}
+            </View>
+          ) : null}
         </View>
 
         {/* Room Types */}
@@ -201,97 +313,54 @@ export default function HomeScreen() {
             <Text style={styles.sectionTitle}>Pilihan Kamar</Text>
           </View>
           
-          {/* VIP Room */}
-          <View style={styles.roomCard}>
-            <View style={styles.roomImageContainer}>
-              <Image 
-                source={{ uri: 'https://images.unsplash.com/photo-1590490360182-c33d57733427?q=80&w=600&auto=format&fit=crop' }} 
-                style={styles.roomImage} 
-              />
-              <LinearGradient
-                colors={['transparent', 'rgba(0,0,0,0.5)']}
-                style={styles.roomImageOverlay}
-              />
-              <View style={styles.roomBadge}>
-                <Ionicons name="diamond" size={10} color="#FFF" />
-                <Text style={styles.roomBadgeText}>VIP</Text>
-              </View>
-              <View style={styles.roomRatingBadge}>
-                <Ionicons name="star" size={10} color="#FFD700" />
-                <Text style={styles.roomRatingText}>4.9</Text>
-              </View>
-            </View>
-            <View style={styles.roomInfo}>
-              <View>
-                <Text style={styles.roomTitle}>Kamar VIP (Suite)</Text>
-                <Text style={styles.roomDesc}>Fasilitas premium, pemandangan kota, akses lounge.</Text>
-                <View style={styles.roomFacilities}>
-                  <View style={styles.facilityItem}>
-                    <Ionicons name="wifi" size={12} color="#B08968" />
-                    <Text style={styles.facilityText}>WiFi</Text>
+          {loadingData ? (
+            <ActivityIndicator size="large" color="#8B5E3C" style={{ marginVertical: 30 }} />
+          ) : roomTypes.length === 0 ? (
+            <Text style={{ textAlign: 'center', color: '#888', marginVertical: 20 }}>Belum ada data tipe kamar.</Text>
+          ) : (
+            roomTypes.slice(0, 4).map((rt) => (
+              <View key={rt.id_room_type} style={styles.roomCard}>
+                <View style={styles.roomImageContainer}>
+                  <Image 
+                    source={{ uri: getRoomImage(rt.name) }} 
+                    style={styles.roomImage} 
+                  />
+                  <LinearGradient
+                    colors={['transparent', 'rgba(0,0,0,0.5)']}
+                    style={styles.roomImageOverlay}
+                  />
+                  <View style={styles.roomBadge}>
+                    <Ionicons name="diamond" size={10} color="#FFF" />
+                    <Text style={styles.roomBadgeText}>{rt.name.toUpperCase()}</Text>
                   </View>
-                  <View style={styles.facilityItem}>
-                    <Ionicons name="tv" size={12} color="#B08968" />
-                    <Text style={styles.facilityText}>TV</Text>
+                </View>
+                <View style={styles.roomInfo}>
+                  <View>
+                    <Text style={styles.roomTitle}>{rt.name}</Text>
+                    <Text style={styles.roomDesc}>{rt.description || 'Kamar nyaman dengan fasilitas lengkap.'}</Text>
+                    <View style={styles.roomFacilities}>
+                      <View style={styles.facilityItem}>
+                        <Ionicons name="wifi" size={12} color="#B08968" />
+                        <Text style={styles.facilityText}>WiFi</Text>
+                      </View>
+                      <View style={styles.facilityItem}>
+                        <Ionicons name="tv" size={12} color="#B08968" />
+                        <Text style={styles.facilityText}>TV</Text>
+                      </View>
+                      <View style={styles.facilityItem}>
+                        <Ionicons name="snow" size={12} color="#B08968" />
+                        <Text style={styles.facilityText}>AC</Text>
+                      </View>
+                    </View>
                   </View>
-                  <View style={styles.facilityItem}>
-                    <Ionicons name="cafe" size={12} color="#B08968" />
-                    <Text style={styles.facilityText}>Minibar</Text>
+                  <View style={styles.priceContainer}>
+                    <Text style={styles.roomPrice}>{formatPrice(rt.price)}</Text>
+                    <Text style={styles.perNight}>/malam</Text>
                   </View>
                 </View>
               </View>
-              <View style={styles.priceContainer}>
-                <Text style={styles.roomPrice}>Rp 3.500.000</Text>
-                <Text style={styles.perNight}>/malam</Text>
-              </View>
-            </View>
-          </View>
-
-          {/* Regular Room */}
-          <View style={styles.roomCard}>
-            <View style={styles.roomImageContainer}>
-              <Image 
-                source={{ uri: 'https://images.unsplash.com/photo-1566665797739-1674de7a421a?q=80&w=600&auto=format&fit=crop' }} 
-                style={styles.roomImage} 
-              />
-              <LinearGradient
-                colors={['transparent', 'rgba(0,0,0,0.5)']}
-                style={styles.roomImageOverlay}
-              />
-              <View style={[styles.roomBadge, { backgroundColor: '#5CB85C' }]}>
-                <Ionicons name="flame" size={10} color="#FFF" />
-                <Text style={styles.roomBadgeText}>POPULER</Text>
-              </View>
-              <View style={styles.roomRatingBadge}>
-                <Ionicons name="star" size={10} color="#FFD700" />
-                <Text style={styles.roomRatingText}>4.7</Text>
-              </View>
-            </View>
-            <View style={styles.roomInfo}>
-              <View>
-                <Text style={styles.roomTitle}>Kamar Reguler (Deluxe)</Text>
-                <Text style={styles.roomDesc}>Nyaman dan luas, cocok untuk istirahat.</Text>
-                <View style={styles.roomFacilities}>
-                  <View style={styles.facilityItem}>
-                    <Ionicons name="wifi" size={12} color="#B08968" />
-                    <Text style={styles.facilityText}>WiFi</Text>
-                  </View>
-                  <View style={styles.facilityItem}>
-                    <Ionicons name="tv" size={12} color="#B08968" />
-                    <Text style={styles.facilityText}>TV</Text>
-                  </View>
-                  <View style={styles.facilityItem}>
-                    <Ionicons name="snow" size={12} color="#B08968" />
-                    <Text style={styles.facilityText}>AC</Text>
-                  </View>
-                </View>
-              </View>
-              <View style={styles.priceContainer}>
-                <Text style={styles.roomPrice}>Rp 1.200.000</Text>
-                <Text style={styles.perNight}>/malam</Text>
-              </View>
-            </View>
-          </View>
+            ))
+          )}
         </View>
 
         {/* Reviews */}
@@ -299,56 +368,45 @@ export default function HomeScreen() {
           <View style={styles.sectionHeader}>
             <Ionicons name="chatbubble-ellipses-outline" size={18} color="#8B5E3C" />
             <Text style={styles.sectionTitle}>Ulasan Tamu</Text>
-            <View style={styles.ratingOverall}>
-              <Ionicons name="star" size={14} color="#FFD700" />
-              <Text style={styles.ratingOverallText}>4.8</Text>
-            </View>
+            {reviews.length > 0 && (
+              <View style={styles.ratingOverall}>
+                <Ionicons name="star" size={14} color="#FFD700" />
+                <Text style={styles.ratingOverallText}>
+                  {(reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)}
+                </Text>
+              </View>
+            )}
           </View>
 
-          <View style={styles.reviewCard}>
-            <View style={styles.quoteDecor}>
-              <Text style={styles.quoteIcon}>❝</Text>
-            </View>
-            <View style={styles.reviewHeader}>
-              <Image 
-                source={{ uri: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=150&auto=format&fit=crop' }} 
-                style={styles.reviewerAvatar} 
-              />
-              <View style={styles.reviewerInfo}>
-                <Text style={styles.reviewerName}>Budi Santoso</Text>
-                <View style={styles.starsContainer}>
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <Ionicons key={star} name="star" size={12} color="#FFD700" />
-                  ))}
-                  <Text style={styles.reviewDate}>2 hari lalu</Text>
+          {loadingData ? (
+            <ActivityIndicator size="large" color="#8B5E3C" style={{ marginVertical: 30 }} />
+          ) : reviews.length === 0 ? (
+            <Text style={{ textAlign: 'center', color: '#888', marginVertical: 20 }}>Belum ada ulasan.</Text>
+          ) : (
+            reviews.slice(0, 5).map((review) => (
+              <View key={review.id_review} style={styles.reviewCard}>
+                <View style={styles.quoteDecor}>
+                  <Text style={styles.quoteIcon}>❝</Text>
                 </View>
-              </View>
-            </View>
-            <Text style={styles.reviewText}>"Pengalaman menginap di kamar VIP sangat luar biasa. Pelayanan sangat cepat dan ramah. AI rekomendasinya juga sangat membantu!"</Text>
-          </View>
-
-          <View style={styles.reviewCard}>
-            <View style={styles.quoteDecor}>
-              <Text style={styles.quoteIcon}>❝</Text>
-            </View>
-            <View style={styles.reviewHeader}>
-              <Image 
-                source={{ uri: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?q=80&w=150&auto=format&fit=crop' }} 
-                style={styles.reviewerAvatar} 
-              />
-              <View style={styles.reviewerInfo}>
-                <Text style={styles.reviewerName}>Siti Aminah</Text>
-                <View style={styles.starsContainer}>
-                  {[1, 2, 3, 4].map((star) => (
-                    <Ionicons key={star} name="star" size={12} color="#FFD700" />
-                  ))}
-                  <Ionicons name="star-half" size={12} color="#FFD700" />
-                  <Text style={styles.reviewDate}>5 hari lalu</Text>
+                <View style={styles.reviewHeader}>
+                  <View style={styles.reviewerInfo}>
+                    <Text style={styles.reviewerName}>Tamu #{review.id_customer}</Text>
+                    <View style={styles.starsContainer}>
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <Ionicons
+                          key={star}
+                          name={star <= review.rating ? 'star' : 'star-outline'}
+                          size={12}
+                          color="#FFD700"
+                        />
+                      ))}
+                    </View>
+                  </View>
                 </View>
+                <Text style={styles.reviewText}>"{review.comment}"</Text>
               </View>
-            </View>
-            <Text style={styles.reviewText}>"Kamar regulernya sangat bersih dan nyaman. Lokasi hotel strategis, sangat direkomendasikan untuk liburan keluarga."</Text>
-          </View>
+            ))
+          )}
         </View>
 
         <View style={{ height: 30 }} />
@@ -656,6 +714,24 @@ const styles = StyleSheet.create({
     borderRadius: 19,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  aiReplyCard: {
+    backgroundColor: '#FFF',
+    borderRadius: 16,
+    padding: 16,
+    marginTop: 12,
+    borderWidth: 1,
+    borderColor: '#F5EBD6',
+    shadowColor: '#D4AF37',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  aiReplyText: {
+    fontSize: 14,
+    color: '#3D2B1F',
+    lineHeight: 22,
   },
 
   // ── Room Cards ──

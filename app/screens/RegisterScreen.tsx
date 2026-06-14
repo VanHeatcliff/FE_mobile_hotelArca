@@ -1,20 +1,24 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView, Image, Alert } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView, Image, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useRole } from '../context/RoleContext';
+import { registerCustomer } from '../services/authService';
+import { login } from '../services/authService';
 
 export default function RegisterScreen() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [loading, setLoading] = useState(false);
   
   const navigation = useNavigation<any>();
-  const { setRole } = useRole();
+  const { setAuth } = useRole();
 
-  const handleRegister = () => {
+  const handleRegister = async () => {
     if (!name || !email || !password || !confirmPassword) {
       Alert.alert('Error', 'Semua field tidak boleh kosong');
       return;
@@ -36,8 +40,18 @@ export default function RegisterScreen() {
       return;
     }
 
-    // Basic simulation: log them in as customer after registering
-    setRole('customer');
+    setLoading(true);
+    try {
+      // 1. Register customer
+      await registerCustomer(name, email, password, phoneNumber);
+      // 2. Auto-login after registration
+      const data = await login(email, password, 'customer');
+      setAuth(data.token, data.user);
+    } catch (error: any) {
+      Alert.alert('Registrasi Gagal', error.message || 'Terjadi kesalahan saat mendaftar');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -65,6 +79,7 @@ export default function RegisterScreen() {
                 placeholder="Masukkan nama lengkap Anda"
                 value={name}
                 onChangeText={setName}
+                editable={!loading}
               />
             </View>
 
@@ -77,6 +92,19 @@ export default function RegisterScreen() {
                 autoCapitalize="none"
                 value={email}
                 onChangeText={setEmail}
+                editable={!loading}
+              />
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Nomor Telepon (Opsional)</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Contoh: 08123456789"
+                keyboardType="phone-pad"
+                value={phoneNumber}
+                onChangeText={setPhoneNumber}
+                editable={!loading}
               />
             </View>
 
@@ -88,6 +116,7 @@ export default function RegisterScreen() {
                 secureTextEntry
                 value={password}
                 onChangeText={setPassword}
+                editable={!loading}
               />
             </View>
 
@@ -99,11 +128,16 @@ export default function RegisterScreen() {
                 secureTextEntry
                 value={confirmPassword}
                 onChangeText={setConfirmPassword}
+                editable={!loading}
               />
             </View>
 
-            <TouchableOpacity style={styles.registerButton} onPress={handleRegister}>
-              <Text style={styles.registerButtonText}>Daftar</Text>
+            <TouchableOpacity style={[styles.registerButton, loading && { opacity: 0.7 }]} onPress={handleRegister} disabled={loading}>
+              {loading ? (
+                <ActivityIndicator color="#FFF" />
+              ) : (
+                <Text style={styles.registerButtonText}>Daftar</Text>
+              )}
             </TouchableOpacity>
 
             <View style={styles.loginContainer}>

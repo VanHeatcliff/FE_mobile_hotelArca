@@ -1,16 +1,21 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, Alert, Platform, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, Alert, Platform, ScrollView, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
+import { createPayment } from '../services/paymentService';
 
 export default function PaymentScreen() {
   const navigation = useNavigation<any>();
+  const route = useRoute<any>();
   const [imageUri, setImageUri] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const booking = route.params?.booking;
+  const totalPayment = booking?.total_payment || 0;
 
   const pickImage = async () => {
-    // No permissions request is necessary for launching the image library
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
       allowsEditing: true,
@@ -23,24 +28,45 @@ export default function PaymentScreen() {
     }
   };
 
-  const handleUpload = () => {
+  const handleUpload = async () => {
     if (!imageUri) {
       Alert.alert('Error', 'Silakan pilih foto bukti pembayaran terlebih dahulu.');
       return;
     }
 
-    // In a real app, this would upload the image to a server
-    Alert.alert(
-      'Berhasil',
-      'Bukti pembayaran berhasil diunggah. Menunggu verifikasi staf.',
-      [
-        {
-          text: 'OK',
-          onPress: () => navigation.goBack()
-        }
-      ]
-    );
+    if (!booking) {
+      Alert.alert('Error', 'Data pemesanan tidak ditemukan.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await createPayment({
+        id_booking: booking.id_booking,
+        total_payment: totalPayment,
+        method: 'transfer',
+        date: new Date().toISOString(),
+        status: 'paid',
+      });
+
+      Alert.alert(
+        'Berhasil',
+        'Pembayaran berhasil dikirim. Status pemesanan telah diperbarui.',
+        [
+          {
+            text: 'OK',
+            onPress: () => navigation.goBack()
+          }
+        ]
+      );
+    } catch (error: any) {
+      Alert.alert('Gagal', error.message || 'Terjadi kesalahan saat mengirim pembayaran');
+    } finally {
+      setLoading(false);
+    }
   };
+
+  const formatPrice = (price: number) => 'Rp ' + price.toLocaleString('id-ID');
 
   return (
     <SafeAreaView style={styles.container}>
@@ -66,7 +92,7 @@ export default function PaymentScreen() {
             <Ionicons name="copy-outline" size={24} color="#8B5E3C" />
           </View>
 
-          <Text style={styles.amountText}>Total Pembayaran: Rp 2.450.000</Text>
+          <Text style={styles.amountText}>Total Pembayaran: {formatPrice(totalPayment)}</Text>
         </View>
 
         <Text style={styles.uploadLabel}>Upload Bukti Pembayaran</Text>
@@ -91,11 +117,15 @@ export default function PaymentScreen() {
 
       <View style={styles.footer}>
         <TouchableOpacity
-          style={[styles.submitButton, !imageUri && styles.submitButtonDisabled]}
+          style={[styles.submitButton, (!imageUri || loading) && styles.submitButtonDisabled]}
           onPress={handleUpload}
-          disabled={!imageUri}
+          disabled={!imageUri || loading}
         >
-          <Text style={styles.submitButtonText}>Kirim Pembayaran</Text>
+          {loading ? (
+            <ActivityIndicator color="#FFF" />
+          ) : (
+            <Text style={styles.submitButtonText}>Kirim Pembayaran</Text>
+          )}
         </TouchableOpacity>
       </View>
     </SafeAreaView>

@@ -1,20 +1,51 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Platform, KeyboardAvoidingView, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Platform, KeyboardAvoidingView, Image, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useRole } from '../context/RoleContext';
+import { api } from '../services/api';
 
 export default function EditProfileScreen() {
   const navigation = useNavigation<any>();
-  const [name, setName] = useState('Alexandra Chen');
-  const [email, setEmail] = useState('alexandra@email.com');
-  const [password, setPassword] = useState('********');
-  const [phone, setPhone] = useState('+62 812 3456 7890');
+  const { user, setAuth, token } = useRole();
+  const [name, setName] = useState(user?.name || '');
+  const [email, setEmail] = useState(user?.email || '');
+  const [password, setPassword] = useState('');
+  const [phone, setPhone] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleSave = () => {
-    // In a real app, save the data to backend here.
-    navigation.goBack();
+  const handleSave = async () => {
+    if (!user || !token) {
+      Alert.alert('Error', 'Sesi tidak valid. Silakan login ulang.');
+      return;
+    }
+
+    if (!name.trim() || !email.trim()) {
+      Alert.alert('Error', 'Nama dan email tidak boleh kosong');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const body: Record<string, any> = { name: name.trim(), email: email.trim() };
+      if (password) body.password = password;
+      if (phone) body.phone_number = phone;
+
+      await api.update('customers', user.id, body);
+
+      // Update context with new data
+      setAuth(token, { ...user, name: name.trim(), email: email.trim() });
+
+      Alert.alert('Berhasil', 'Profil berhasil diperbarui', [
+        { text: 'OK', onPress: () => navigation.goBack() },
+      ]);
+    } catch (error: any) {
+      Alert.alert('Gagal', error.message || 'Gagal memperbarui profil');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -29,8 +60,8 @@ export default function EditProfileScreen() {
             <Ionicons name="chevron-back" size={26} color="#8B5E3C" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Edit Profil</Text>
-          <TouchableOpacity onPress={handleSave}>
-            <Text style={styles.saveText}>Simpan</Text>
+          <TouchableOpacity onPress={handleSave} disabled={loading}>
+            <Text style={[styles.saveText, loading && { opacity: 0.5 }]}>Simpan</Text>
           </TouchableOpacity>
         </View>
 
@@ -65,6 +96,7 @@ export default function EditProfileScreen() {
                   value={name}
                   onChangeText={setName}
                   placeholderTextColor="#B5A897"
+                  editable={!loading}
                 />
               </View>
             </View>
@@ -80,12 +112,13 @@ export default function EditProfileScreen() {
                   keyboardType="email-address"
                   autoCapitalize="none"
                   placeholderTextColor="#B5A897"
+                  editable={!loading}
                 />
               </View>
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Kata Sandi</Text>
+              <Text style={styles.label}>Kata Sandi Baru (opsional)</Text>
               <View style={styles.inputWrapper}>
                 <Ionicons name="lock-closed-outline" size={18} color="#B08968" style={styles.inputIcon} />
                 <TextInput
@@ -93,7 +126,9 @@ export default function EditProfileScreen() {
                   value={password}
                   onChangeText={setPassword}
                   secureTextEntry
+                  placeholder="Kosongkan jika tidak ingin mengubah"
                   placeholderTextColor="#B5A897"
+                  editable={!loading}
                 />
               </View>
             </View>
@@ -107,20 +142,26 @@ export default function EditProfileScreen() {
                   value={phone}
                   onChangeText={setPhone}
                   keyboardType="phone-pad"
+                  placeholder="Masukkan nomor telepon"
                   placeholderTextColor="#B5A897"
+                  editable={!loading}
                 />
               </View>
             </View>
           </View>
 
-          <TouchableOpacity style={styles.saveButton} onPress={handleSave} activeOpacity={0.85}>
+          <TouchableOpacity style={[styles.saveButton, loading && { opacity: 0.7 }]} onPress={handleSave} activeOpacity={0.85} disabled={loading}>
             <LinearGradient
               colors={['#8B5E3C', '#A0724E']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
               style={styles.saveButtonGradient}
             >
-              <Text style={styles.saveButtonText}>Simpan Perubahan</Text>
+              {loading ? (
+                <ActivityIndicator color="#FFF" />
+              ) : (
+                <Text style={styles.saveButtonText}>Simpan Perubahan</Text>
+              )}
             </LinearGradient>
           </TouchableOpacity>
 

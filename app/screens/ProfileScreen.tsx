@@ -7,7 +7,7 @@ import { useRole } from '../context/RoleContext';
 
 export default function ProfileScreen() {
   const navigation = useNavigation<any>();
-  const { logout } = useRole();
+  const { logout, user } = useRole();
 
   return (
     <SafeAreaView style={styles.container}>
@@ -42,11 +42,11 @@ export default function ProfileScreen() {
               />
             </View>
             <View style={styles.profileInfo}>
-              <Text style={styles.profileName}>Alexandra Chen</Text>
-              <Text style={styles.profileEmail}>alexandra@email.com</Text>
+              <Text style={styles.profileName}>{user?.name || 'Guest'}</Text>
+              <Text style={styles.profileEmail}>{user?.email || '-'}</Text>
               <View style={styles.badge}>
                 <Ionicons name="star" size={12} color="#C49B30" />
-                <Text style={styles.badgeText}>Gold Member</Text>
+                <Text style={styles.badgeText}>Member</Text>
               </View>
             </View>
             <View style={styles.editBadge}>
