@@ -79,7 +79,7 @@ export default function RoomListScreen() {
           onPress: async () => {
             setBookingLoading(room.id_room);
             try {
-              await createBooking({
+              const newBooking = await createBooking({
                 id_customer: user.id,
                 id_room: room.id_room,
                 date_in: checkIn,
@@ -87,7 +87,7 @@ export default function RoomListScreen() {
                 total_payment: totalPayment,
               });
               Alert.alert('Berhasil', 'Pemesanan berhasil dibuat! Silakan lakukan pembayaran.', [
-                { text: 'OK', onPress: () => navigation.goBack() },
+                { text: 'OK', onPress: () => navigation.navigate('Payment', { booking: newBooking }) },
               ]);
             } catch (error: any) {
               Alert.alert('Gagal', error.message || 'Gagal membuat pemesanan');

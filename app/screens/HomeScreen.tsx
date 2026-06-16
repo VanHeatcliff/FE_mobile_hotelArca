@@ -6,7 +6,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { getRoomTypes, RoomType } from '../services/roomService';
-import { getReviews, Review } from '../services/reviewService';
+import { getReviews, Review, createReview } from '../services/reviewService';
 import { getAiRecommendation } from '../services/aiService';
 import { useRole } from '../context/RoleContext';
 
@@ -32,6 +32,13 @@ export default function HomeScreen() {
   const [roomTypes, setRoomTypes] = useState<RoomType[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loadingData, setLoadingData] = useState(true);
+
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewComment, setReviewComment] = useState('');
+  const [reviewLoading, setReviewLoading] = useState(false);
+
+  const [adultCount, setAdultCount] = useState(2);
+  const [childCount, setChildCount] = useState(0);
 
   useEffect(() => {
     fetchData();
@@ -64,6 +71,34 @@ export default function HomeScreen() {
       Alert.alert('AI Error', error.message || 'Gagal mendapatkan rekomendasi');
     } finally {
       setAiLoading(false);
+    }
+  };
+
+  const handleSubmitReview = async () => {
+    if (!user) {
+      Alert.alert('Error', 'Silakan login untuk memberikan ulasan');
+      return;
+    }
+    if (!reviewComment.trim()) {
+      Alert.alert('Error', 'Komentar ulasan tidak boleh kosong');
+      return;
+    }
+    setReviewLoading(true);
+    try {
+      await createReview({
+        id_customer: user.id,
+        id_room: 1,
+        rating: reviewRating,
+        comment: reviewComment,
+      });
+      Alert.alert('Berhasil', 'Terima kasih atas ulasan Anda!');
+      setReviewComment('');
+      setReviewRating(5);
+      fetchData();
+    } catch (error: any) {
+      Alert.alert('Gagal', error.message || 'Gagal mengirim ulasan');
+    } finally {
+      setReviewLoading(false);
     }
   };
 
@@ -218,9 +253,62 @@ export default function HomeScreen() {
               <View style={styles.inputGroup}>
                 <View style={styles.inputLabelRow}>
                   <Ionicons name="people-outline" size={14} color="#B08968" />
-                  <Text style={styles.inputLabel}>Tamu & Kamar</Text>
+                  <Text style={styles.inputLabel}>Jumlah Tamu (Maks 4)</Text>
                 </View>
-                <Text style={styles.inputValue}>2 Dewasa, 1 Kamar</Text>
+                
+                {/* Dewasa Counter */}
+                <View style={styles.guestCounterRow}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.inputValue}>Dewasa</Text>
+                    <Text style={styles.guestSubtitle}>3 tahun ke atas</Text>
+                  </View>
+                  <View style={styles.counterControl}>
+                    <TouchableOpacity 
+                      style={[styles.counterButton, adultCount <= 1 && styles.counterButtonDisabled]} 
+                      onPress={() => setAdultCount(Math.max(1, adultCount - 1))}
+                      disabled={adultCount <= 1}
+                    >
+                      <Ionicons name="remove" size={16} color={adultCount <= 1 ? "#CCC" : "#8B5E3C"} />
+                    </TouchableOpacity>
+                    <Text style={styles.counterValue}>{adultCount}</Text>
+                    <TouchableOpacity 
+                      style={[styles.counterButton, (adultCount >= 4 || adultCount + childCount >= 4) && styles.counterButtonDisabled]} 
+                      onPress={() => {
+                        if (adultCount < 4 && adultCount + childCount < 4) setAdultCount(adultCount + 1);
+                      }}
+                      disabled={adultCount >= 4 || adultCount + childCount >= 4}
+                    >
+                      <Ionicons name="add" size={16} color={(adultCount >= 4 || adultCount + childCount >= 4) ? "#CCC" : "#8B5E3C"} />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+
+                {/* Anak Counter */}
+                <View style={[styles.guestCounterRow, { marginTop: 12 }]}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.inputValue}>Anak</Text>
+                    <Text style={styles.guestSubtitle}>Di bawah 3 tahun</Text>
+                  </View>
+                  <View style={styles.counterControl}>
+                    <TouchableOpacity 
+                      style={[styles.counterButton, childCount <= 0 && styles.counterButtonDisabled]} 
+                      onPress={() => setChildCount(Math.max(0, childCount - 1))}
+                      disabled={childCount <= 0}
+                    >
+                      <Ionicons name="remove" size={16} color={childCount <= 0 ? "#CCC" : "#8B5E3C"} />
+                    </TouchableOpacity>
+                    <Text style={styles.counterValue}>{childCount}</Text>
+                    <TouchableOpacity 
+                      style={[styles.counterButton, (childCount >= 3 || adultCount + childCount >= 4) && styles.counterButtonDisabled]} 
+                      onPress={() => {
+                        if (childCount < 3 && adultCount + childCount < 4) setChildCount(childCount + 1);
+                      }}
+                      disabled={childCount >= 3 || adultCount + childCount >= 4}
+                    >
+                      <Ionicons name="add" size={16} color={(childCount >= 3 || adultCount + childCount >= 4) ? "#CCC" : "#8B5E3C"} />
+                    </TouchableOpacity>
+                  </View>
+                </View>
               </View>
             </View>
             <TouchableOpacity style={styles.searchButton} activeOpacity={0.85} onPress={() => navigation.navigate('RoomList', { checkIn: checkInDate.toISOString(), checkOut: checkOutDate.toISOString() })}>
@@ -407,6 +495,49 @@ export default function HomeScreen() {
               </View>
             ))
           )}
+        </View>
+
+        <View style={{ height: 30 }} />
+
+        {/* Add Review Form */}
+        <View style={styles.sectionContainer}>
+          <View style={styles.sectionHeader}>
+            <Ionicons name="create-outline" size={18} color="#8B5E3C" />
+            <Text style={styles.sectionTitle}>Berikan Ulasan Anda</Text>
+          </View>
+          <View style={styles.reviewFormCard}>
+            <Text style={styles.reviewFormLabel}>Beri Rating (1-5)</Text>
+            <View style={styles.ratingInputContainer}>
+              {[1, 2, 3, 4, 5].map((star) => (
+                <TouchableOpacity key={star} onPress={() => setReviewRating(star)}>
+                  <Ionicons
+                    name={star <= reviewRating ? 'star' : 'star-outline'}
+                    size={32}
+                    color="#FFD700"
+                  />
+                </TouchableOpacity>
+              ))}
+            </View>
+            <TextInput
+              style={styles.reviewFormInput}
+              placeholder="Tulis pengalaman menginap Anda..."
+              placeholderTextColor="#B5A897"
+              value={reviewComment}
+              onChangeText={setReviewComment}
+              multiline
+            />
+            <TouchableOpacity 
+              style={[styles.submitReviewButton, reviewLoading && { opacity: 0.7 }]}
+              onPress={handleSubmitReview}
+              disabled={reviewLoading}
+            >
+              {reviewLoading ? (
+                <ActivityIndicator color="#FFF" />
+              ) : (
+                <Text style={styles.submitReviewText}>Kirim Ulasan</Text>
+              )}
+            </TouchableOpacity>
+          </View>
         </View>
 
         <View style={{ height: 30 }} />
@@ -651,6 +782,44 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: 'bold',
     letterSpacing: 0.3,
+  },
+  guestCounterRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 6,
+  },
+  counterControl: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  counterValue: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#3D2B1F',
+    width: 14,
+    textAlign: 'center',
+  },
+  counterButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#FBF5ED',
+    borderWidth: 1,
+    borderColor: '#F0E6D6',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  counterButtonDisabled: {
+    borderColor: '#EAEAEA',
+    backgroundColor: '#F9F9F9',
+  },
+  guestSubtitle: {
+    fontSize: 11,
+    color: '#B08968',
+    marginTop: 2,
+    fontStyle: 'italic',
   },
 
   // ── AI Card ──
@@ -931,5 +1100,53 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     fontStyle: 'italic',
     fontFamily: Platform.OS === 'ios' ? 'Georgia-Italic' : 'serif',
+  },
+
+  // ── Review Form ──
+  reviewFormCard: {
+    backgroundColor: '#FFF',
+    borderRadius: 20,
+    padding: 20,
+    shadowColor: '#8B5E3C',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    elevation: 4,
+    borderWidth: 1,
+    borderColor: '#F5EDE4',
+  },
+  reviewFormLabel: {
+    fontSize: 14,
+    color: '#8C7B6B',
+    marginBottom: 8,
+    fontWeight: '500',
+  },
+  ratingInputContainer: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 16,
+  },
+  reviewFormInput: {
+    backgroundColor: '#FBF8F4',
+    borderWidth: 1,
+    borderColor: '#F0EBE3',
+    borderRadius: 12,
+    padding: 16,
+    height: 100,
+    textAlignVertical: 'top',
+    fontSize: 14,
+    color: '#3D2B1F',
+    marginBottom: 16,
+  },
+  submitReviewButton: {
+    backgroundColor: '#8B5E3C',
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  submitReviewText: {
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });

@@ -11,3 +11,7 @@ export interface Review {
 export function getReviews() {
   return api.list<Review[]>('reviews');
 }
+
+export function createReview(body: Record<string, any>) {
+  return api.create('reviews', body);
+}

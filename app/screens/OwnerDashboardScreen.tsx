@@ -64,9 +64,7 @@ const OwnerDashboardScreen = () => {
   const dateString = today.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
   const formatCurrency = (num: number) => {
-    if (num >= 1000000) return `Rp ${(num / 1000000).toFixed(1)}M`;
-    if (num >= 1000) return `Rp ${(num / 1000).toFixed(0)}K`;
-    return `Rp ${num}`;
+    return 'Rp ' + num.toLocaleString('id-ID');
   };
 
   return (
@@ -169,7 +167,7 @@ const styles = StyleSheet.create({
   cardsContainer: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 12, marginBottom: 28 },
   kpiCard: { width: '47%', backgroundColor: '#FFF', padding: 18, borderRadius: 20, alignItems: 'center', shadowColor: '#8B5E3C', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.06, shadowRadius: 12, elevation: 3, borderWidth: 1, borderColor: '#F5EDE4' },
   kpiIconCircle: { width: 46, height: 46, borderRadius: 23, justifyContent: 'center', alignItems: 'center', marginBottom: 12 },
-  kpiValue: { fontSize: 26, fontWeight: '800', color: '#3D2B1F', marginBottom: 4, fontFamily: Platform.OS === 'ios' ? 'Georgia-Bold' : 'serif' },
+  kpiValue: { fontSize: 20, fontWeight: '800', color: '#3D2B1F', marginBottom: 4, fontFamily: Platform.OS === 'ios' ? 'Georgia-Bold' : 'serif' },
   kpiLabel: { fontSize: 12, color: '#8C7B6B', fontWeight: '500', marginBottom: 8 },
   chartContainer: { backgroundColor: '#FFF', borderRadius: 22, padding: 20, shadowColor: '#8B5E3C', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.06, shadowRadius: 12, elevation: 3, borderWidth: 1, borderColor: '#F5EDE4' },
   chartHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 },
