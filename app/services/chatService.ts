@@ -23,7 +23,6 @@ export function createChat(id_customer: number, id_staff: number) {
   return api.create<Chat>('chats', {
     id_customer,
     id_staff,
-    date: new Date().toISOString(),
   });
 }
 
