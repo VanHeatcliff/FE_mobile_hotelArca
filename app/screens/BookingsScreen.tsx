@@ -157,6 +157,17 @@ export default function BookingsScreen() {
                       </TouchableOpacity>
                     </View>
                   )}
+
+                  {booking.status_payment === 'paid' && (
+                    <View style={styles.actionButtons}>
+                      <TouchableOpacity 
+                        style={styles.travelButton} 
+                        onPress={() => navigation.navigate('TravelPlan', { booking })}
+                      >
+                        <Text style={styles.travelButtonText}>🗺️ Rencana Wisata Lombok</Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
                 </View>
               );
             })
@@ -306,5 +317,16 @@ const styles = StyleSheet.create({
   emptyText: {
     color: '#888',
     fontSize: 16,
+  },
+  travelButton: {
+    backgroundColor: '#2E7D32',
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  travelButtonText: {
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });

@@ -1,4 +1,4 @@
-const BASE_URL = 'https://getup-zips-buckskin.ngrok-free.dev';
+const BASE_URL = 'https://tackle-compost-gusty.ngrok-free.dev';
 
 let _token: string | null = null;
 

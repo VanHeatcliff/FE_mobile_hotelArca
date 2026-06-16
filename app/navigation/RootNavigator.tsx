@@ -8,6 +8,7 @@ import AuthScreen from '../screens/AuthScreen';
 import RegisterScreen from '../screens/RegisterScreen';
 import RoomListScreen from '../screens/RoomListScreen';
 import PaymentScreen from '../screens/PaymentScreen';
+import TravelPlanScreen from '../screens/TravelPlanScreen';
 import { useRole } from '../context/RoleContext';
 
 const Stack = createNativeStackNavigator();
@@ -18,6 +19,7 @@ function CustomerStack() {
       <Stack.Screen name="MainTabs" component={TabNavigator} />
       <Stack.Screen name="RoomList" component={RoomListScreen} />
       <Stack.Screen name="Payment" component={PaymentScreen} />
+      <Stack.Screen name="TravelPlan" component={TravelPlanScreen} />
     </Stack.Navigator>
   );
 }
