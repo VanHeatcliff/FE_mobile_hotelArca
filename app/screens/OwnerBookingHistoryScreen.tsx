@@ -52,20 +52,27 @@ const OwnerBookingHistoryScreen = () => {
   const formatPrice = (price: number) => 'Rp ' + price.toLocaleString('id-ID');
 
   const renderBooking = ({ item }: { item: Booking }) => (
-    <View style={styles.row}>
-      <View style={[styles.cell, { flex: 2 }]}>
-        <Text style={styles.guestName}>Customer #{item.id_customer}</Text>
-        <Text style={styles.bookingId}>#{item.id_booking}</Text>
-      </View>
-      <View style={[styles.cell, { flex: 2 }]}>
-        <Text style={styles.cellText}>{formatDate(item.date_in)} - {formatDate(item.date_out)}</Text>
-      </View>
-      <View style={[styles.cell, { flex: 1.5 }]}>
-        <Text style={styles.totalPaid}>{formatPrice(item.total_payment)}</Text>
-      </View>
-      <View style={[styles.cell, { flex: 1.5 }]}>
+    <View style={styles.cardRow}>
+      <View style={styles.cardHeader}>
+        <View>
+          <Text style={styles.guestName}>Customer #{item.id_customer}</Text>
+          <Text style={styles.bookingId}>Booking ID: #{item.id_booking}</Text>
+        </View>
         <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status_payment) + '20' }]}>
           <Text style={[styles.statusText, { color: getStatusColor(item.status_payment) }]}>{getStatusLabel(item.status_payment)}</Text>
+        </View>
+      </View>
+      
+      <View style={styles.cardDivider} />
+      
+      <View style={styles.cardBody}>
+        <View style={styles.cardInfo}>
+          <Text style={styles.cardLabel}>Tanggal Menginap</Text>
+          <Text style={styles.cardValue}>{formatDate(item.date_in)} - {formatDate(item.date_out)}</Text>
+        </View>
+        <View style={styles.cardInfo}>
+          <Text style={styles.cardLabel}>Total Pembayaran</Text>
+          <Text style={styles.totalPaid}>{formatPrice(item.total_payment)}</Text>
         </View>
       </View>
     </View>
@@ -90,13 +97,6 @@ const OwnerBookingHistoryScreen = () => {
         <ActivityIndicator size="large" color="#D4AF37" style={{ marginTop: 60 }} />
       ) : (
         <View style={styles.table}>
-          <View style={styles.tableHeader}>
-            <Text style={[styles.columnHeader, { flex: 2 }]}>Guest</Text>
-            <Text style={[styles.columnHeader, { flex: 2 }]}>Dates</Text>
-            <Text style={[styles.columnHeader, { flex: 1.5 }]}>Total Paid</Text>
-            <Text style={[styles.columnHeader, { flex: 1.5 }]}>Status</Text>
-          </View>
-          
           <FlatList
             data={filteredBookings}
             keyExtractor={item => String(item.id_booking)}
@@ -117,18 +117,54 @@ const styles = StyleSheet.create({
   searchContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#f0f0f0', borderRadius: 8, paddingHorizontal: 12, width: 250 },
   searchIcon: { marginRight: 8 },
   searchInput: { flex: 1, height: 40, color: '#333333' },
-  table: { flex: 1, backgroundColor: '#ffffff', margin: 24, borderRadius: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 3, borderWidth: 1, borderColor: '#f0f0f0', overflow: 'hidden' },
-  tableHeader: { flexDirection: 'row', backgroundColor: '#fafafa', paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: '#f0f0f0' },
-  columnHeader: { fontSize: 14, fontWeight: '600', color: '#666666' },
-  listContent: { paddingBottom: 16 },
-  row: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: '#f0f0f0' },
-  cell: { justifyContent: 'center' },
-  guestName: { fontSize: 14, fontWeight: '600', color: '#333333', marginBottom: 4 },
+  table: { flex: 1, backgroundColor: '#f9f9f9', marginTop: 16 },
+  listContent: { paddingBottom: 32 },
+  cardRow: {
+    backgroundColor: '#fff',
+    marginHorizontal: 16,
+    marginBottom: 16,
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#f0f0f0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  cardDivider: {
+    height: 1,
+    backgroundColor: '#f0f0f0',
+    marginVertical: 12,
+  },
+  cardBody: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  cardInfo: {
+    flex: 1,
+  },
+  cardLabel: {
+    fontSize: 12,
+    color: '#888',
+    marginBottom: 4,
+  },
+  cardValue: {
+    fontSize: 14,
+    color: '#333',
+    fontWeight: '500',
+  },
+  guestName: { fontSize: 16, fontWeight: '700', color: '#333333', marginBottom: 4 },
   bookingId: { fontSize: 12, color: '#999999' },
-  cellText: { fontSize: 14, color: '#333333' },
-  totalPaid: { fontSize: 14, fontWeight: '600', color: '#333333' },
-  statusBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12, alignSelf: 'flex-start' },
-  statusText: { fontSize: 12, fontWeight: '600' },
+  totalPaid: { fontSize: 16, fontWeight: '700', color: '#4CAF50' },
+  statusBadge: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, alignSelf: 'flex-start' },
+  statusText: { fontSize: 12, fontWeight: '700', textTransform: 'uppercase' },
 });
 
 export default OwnerBookingHistoryScreen;
