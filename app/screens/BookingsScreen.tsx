@@ -95,13 +95,13 @@ export default function BookingsScreen() {
       </View>
 
       <View style={styles.tabContainer}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={[styles.tabButton, activeTab === 'Aktif' && styles.activeTabButton]}
           onPress={() => setActiveTab('Aktif')}
         >
           <Text style={[styles.tabText, activeTab === 'Aktif' && styles.activeTabText]}>Aktif</Text>
         </TouchableOpacity>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={[styles.tabButton, activeTab === 'Riwayat' && styles.activeTabButton]}
           onPress={() => setActiveTab('Riwayat')}
         >
@@ -133,7 +133,7 @@ export default function BookingsScreen() {
                   <Text style={styles.dateText}>
                     {formatDate(booking.date_in)} - {formatDate(booking.date_out)}
                   </Text>
-                  
+
                   <View style={styles.priceContainer}>
                     <Text style={styles.priceLabel}>Total Harga</Text>
                     <Text style={styles.priceValue}>{formatPrice(booking.total_payment)}</Text>
@@ -144,8 +144,8 @@ export default function BookingsScreen() {
                       <TouchableOpacity style={styles.payButton} onPress={() => navigation.navigate('Payment', { booking })}>
                         <Text style={styles.payButtonText}>Bayar Sekarang</Text>
                       </TouchableOpacity>
-                      <TouchableOpacity 
-                        style={styles.cancelButton} 
+                      <TouchableOpacity
+                        style={styles.cancelButton}
                         onPress={() => handleCancel(booking)}
                         disabled={cancellingId === booking.id_booking}
                       >
@@ -158,16 +158,7 @@ export default function BookingsScreen() {
                     </View>
                   )}
 
-                  {booking.status_payment === 'paid' && (
-                    <View style={styles.actionButtons}>
-                      <TouchableOpacity 
-                        style={styles.travelButton} 
-                        onPress={() => navigation.navigate('TravelPlan', { booking })}
-                      >
-                        <Text style={styles.travelButtonText}>🗺️ Rencana Wisata Lombok</Text>
-                      </TouchableOpacity>
-                    </View>
-                  )}
+
                 </View>
               );
             })
@@ -318,15 +309,5 @@ const styles = StyleSheet.create({
     color: '#888',
     fontSize: 16,
   },
-  travelButton: {
-    backgroundColor: '#2E7D32',
-    paddingVertical: 14,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  travelButtonText: {
-    color: '#FFF',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
+
 });

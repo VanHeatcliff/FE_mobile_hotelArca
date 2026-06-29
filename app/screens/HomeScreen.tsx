@@ -1,13 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, TextInput, Platform, Dimensions, ActivityIndicator, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { getRoomTypes, RoomType } from '../services/roomService';
 import { getReviews, Review, createReview } from '../services/reviewService';
-import { getAiRecommendation } from '../services/aiService';
+import { getAiRecommendation, getAiTravelPlan } from '../services/aiService';
+import { getBookings, Booking } from '../services/bookingService';
 import { useRole } from '../context/RoleContext';
 
 const { width } = Dimensions.get('window');
@@ -40,9 +41,45 @@ export default function HomeScreen() {
   const [adultCount, setAdultCount] = useState(2);
   const [childCount, setChildCount] = useState(0);
 
+  // Travel plan state
+  const [latestPaidBooking, setLatestPaidBooking] = useState<Booking | null>(null);
+  const [travelActivities, setTravelActivities] = useState<string[]>([]);
+  const [travelCustomMessage, setTravelCustomMessage] = useState('');
+  const [travelReply, setTravelReply] = useState('');
+  const [travelLoading, setTravelLoading] = useState(false);
+  const [bookingLoading, setBookingLoading] = useState(true);
+
   useEffect(() => {
     fetchData();
   }, []);
+
+  // Fetch latest paid booking when screen is focused
+  useFocusEffect(
+    useCallback(() => {
+      fetchLatestPaidBooking();
+    }, [user])
+  );
+
+  const fetchLatestPaidBooking = async () => {
+    if (!user) {
+      setLatestPaidBooking(null);
+      setBookingLoading(false);
+      return;
+    }
+    setBookingLoading(true);
+    try {
+      const data = await getBookings();
+      const all = Array.isArray(data) ? data : [];
+      const myPaidBookings = all
+        .filter(b => b.id_customer === user.id && b.status_payment === 'paid')
+        .sort((a, b) => new Date(b.date_in).getTime() - new Date(a.date_in).getTime());
+      setLatestPaidBooking(myPaidBookings.length > 0 ? myPaidBookings[0] : null);
+    } catch {
+      setLatestPaidBooking(null);
+    } finally {
+      setBookingLoading(false);
+    }
+  };
 
   const fetchData = async () => {
     setLoadingData(true);
@@ -100,6 +137,55 @@ export default function HomeScreen() {
     } finally {
       setReviewLoading(false);
     }
+  };
+
+  // Travel plan
+  const ACTIVITY_CHIPS = [
+    { label: 'Pantai', icon: 'sunny-outline' as const, keyword: 'pantai' },
+    { label: 'Snorkeling', icon: 'fish-outline' as const, keyword: 'snorkeling' },
+    { label: 'Hiking', icon: 'walk-outline' as const, keyword: 'hiking' },
+    { label: 'Budaya', icon: 'globe-outline' as const, keyword: 'budaya' },
+    { label: 'Air Terjun', icon: 'water-outline' as const, keyword: 'air terjun' },
+    { label: 'Gunung', icon: 'triangle-outline' as const, keyword: 'gunung' },
+    { label: 'Diving', icon: 'boat-outline' as const, keyword: 'diving' },
+    { label: 'Kuliner', icon: 'restaurant-outline' as const, keyword: 'kuliner' },
+  ];
+
+  const toggleTravelActivity = (keyword: string) => {
+    setTravelActivities(prev =>
+      prev.includes(keyword)
+        ? prev.filter(a => a !== keyword)
+        : [...prev, keyword]
+    );
+  };
+
+  const handleGetTravelPlan = async () => {
+    if (!latestPaidBooking) {
+      Alert.alert('Info', 'Anda perlu memiliki booking yang sudah dibayar untuk mendapatkan rekomendasi wisata.');
+      return;
+    }
+    setTravelLoading(true);
+    setTravelReply('');
+    try {
+      const message = [
+        ...travelActivities,
+        travelCustomMessage.trim(),
+      ].filter(Boolean).join(', ');
+      const data = await getAiTravelPlan(latestPaidBooking.id_booking, message || undefined);
+      setTravelReply(data.reply);
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'Gagal mendapatkan rekomendasi wisata.');
+    } finally {
+      setTravelLoading(false);
+    }
+  };
+
+  const travelNights = latestPaidBooking
+    ? Math.max(1, Math.round((new Date(latestPaidBooking.date_out).getTime() - new Date(latestPaidBooking.date_in).getTime()) / 86400000))
+    : 0;
+
+  const formatBookingDate = (dateStr: string) => {
+    return new Date(dateStr).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
   };
 
   const onCheckInChange = (event: any, selectedDate?: Date) => {
@@ -392,6 +478,141 @@ export default function HomeScreen() {
               )}
             </View>
           ) : null}
+        </View>
+
+        {/* Travel Plan Recommendation */}
+        <View style={styles.sectionContainer}>
+          <View style={styles.sectionHeader}>
+            <Ionicons name="map-outline" size={18} color="#2E7D32" />
+            <Text style={styles.sectionTitle}>Rekomendasi Wisata Lombok</Text>
+          </View>
+
+          {bookingLoading ? (
+            <ActivityIndicator size="large" color="#2E7D32" style={{ marginVertical: 30 }} />
+          ) : !user ? (
+            <View style={styles.travelEmptyCard}>
+              <Ionicons name="log-in-outline" size={32} color="#B08968" />
+              <Text style={styles.travelEmptyText}>Silakan login untuk mendapatkan rekomendasi wisata Lombok.</Text>
+            </View>
+          ) : !latestPaidBooking ? (
+            <View style={styles.travelEmptyCard}>
+              <Ionicons name="airplane-outline" size={32} color="#B08968" />
+              <Text style={styles.travelEmptyText}>Selesaikan booking dan pembayaran untuk mendapatkan rekomendasi wisata Lombok yang dipersonalisasi oleh AI.</Text>
+            </View>
+          ) : (
+            <>
+              {/* Booking Info Card */}
+              <View style={styles.travelBookingCard}>
+                <View style={styles.travelAccentLine} />
+                <View style={styles.travelBookingRow}>
+                  <View style={styles.travelBookingItem}>
+                    <Ionicons name="calendar-outline" size={16} color="#2E7D32" />
+                    <View>
+                      <Text style={styles.travelBookingLabel}>CHECK-IN</Text>
+                      <Text style={styles.travelBookingValue}>{formatBookingDate(latestPaidBooking.date_in)}</Text>
+                    </View>
+                  </View>
+                  <View style={styles.travelBookingDivider} />
+                  <View style={styles.travelBookingItem}>
+                    <Ionicons name="calendar-outline" size={16} color="#2E7D32" />
+                    <View>
+                      <Text style={styles.travelBookingLabel}>CHECK-OUT</Text>
+                      <Text style={styles.travelBookingValue}>{formatBookingDate(latestPaidBooking.date_out)}</Text>
+                    </View>
+                  </View>
+                </View>
+                <View style={styles.travelNightsBadge}>
+                  <Ionicons name="moon-outline" size={14} color="#2E7D32" />
+                  <Text style={styles.travelNightsBadgeText}>{travelNights} malam</Text>
+                </View>
+              </View>
+
+              {/* Activity Chips */}
+              <View style={styles.travelSubSection}>
+                <View style={styles.travelSubHeader}>
+                  <Ionicons name="compass-outline" size={16} color="#2E7D32" />
+                  <Text style={styles.travelSubTitle}>Pilih Aktivitas</Text>
+                </View>
+                <Text style={styles.travelSubDesc}>Pilih aktivitas yang Anda sukai untuk rekomendasi yang lebih akurat</Text>
+                <View style={styles.travelChipsContainer}>
+                  {ACTIVITY_CHIPS.map((chip) => {
+                    const isSelected = travelActivities.includes(chip.keyword);
+                    return (
+                      <TouchableOpacity
+                        key={chip.keyword}
+                        style={[styles.travelChip, isSelected && styles.travelChipSelected]}
+                        onPress={() => toggleTravelActivity(chip.keyword)}
+                        activeOpacity={0.7}
+                      >
+                        <Ionicons name={chip.icon} size={14} color={isSelected ? '#FFF' : '#2E7D32'} />
+                        <Text style={[styles.travelChipText, isSelected && styles.travelChipTextSelected]}>{chip.label}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </View>
+
+              {/* Custom Message */}
+              <View style={styles.travelSubSection}>
+                <View style={styles.travelSubHeader}>
+                  <Ionicons name="chatbubble-outline" size={16} color="#2E7D32" />
+                  <Text style={styles.travelSubTitle}>Catatan Tambahan</Text>
+                </View>
+                <View style={styles.travelInputWrapper}>
+                  <TextInput
+                    style={styles.travelInput}
+                    placeholder="Contoh: saya suka tempat yang sepi dan fotogenik..."
+                    placeholderTextColor="#B5A897"
+                    value={travelCustomMessage}
+                    onChangeText={setTravelCustomMessage}
+                    multiline
+                    editable={!travelLoading}
+                  />
+                </View>
+              </View>
+
+              {/* Get Plan Button */}
+              <TouchableOpacity
+                style={[styles.travelPlanButton, travelLoading && { opacity: 0.7 }]}
+                onPress={handleGetTravelPlan}
+                disabled={travelLoading}
+                activeOpacity={0.85}
+              >
+                <LinearGradient
+                  colors={['#2E7D32', '#43A047']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.travelPlanButtonGradient}
+                >
+                  {travelLoading ? (
+                    <ActivityIndicator size="small" color="#FFF" />
+                  ) : (
+                    <>
+                      <Ionicons name="map-outline" size={20} color="#FFF" style={{ marginRight: 8 }} />
+                      <Text style={styles.travelPlanButtonText}>Dapatkan Rekomendasi Wisata</Text>
+                    </>
+                  )}
+                </LinearGradient>
+              </TouchableOpacity>
+
+              {/* Result */}
+              {travelReply ? (
+                <View style={styles.travelResultContainer}>
+                  <View style={styles.travelResultHeader}>
+                    <View style={styles.travelResultIconCircle}>
+                      <Ionicons name="sparkles" size={20} color="#2E7D32" />
+                    </View>
+                    <View>
+                      <Text style={styles.travelResultTitle}>Rekomendasi Wisata</Text>
+                      <Text style={styles.travelResultSubtitle}>Berdasarkan {travelNights} hari perjalanan Anda</Text>
+                    </View>
+                  </View>
+                  <View style={styles.travelResultDivider} />
+                  <Text style={styles.travelResultText}>{travelReply}</Text>
+                </View>
+              ) : null}
+            </>
+          )}
         </View>
 
         {/* Room Types */}
@@ -1148,5 +1369,247 @@ const styles = StyleSheet.create({
     color: '#FFF',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+
+  // ── Travel Plan Section ──
+  travelEmptyCard: {
+    backgroundColor: '#FFF',
+    borderRadius: 20,
+    padding: 28,
+    alignItems: 'center',
+    shadowColor: '#2E7D32',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: '#E8F5E9',
+    gap: 10,
+  },
+  travelEmptyText: {
+    fontSize: 14,
+    color: '#6B5D50',
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+  travelBookingCard: {
+    backgroundColor: '#FFF',
+    borderRadius: 22,
+    padding: 20,
+    marginBottom: 16,
+    shadowColor: '#2E7D32',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    elevation: 4,
+    borderWidth: 1,
+    borderColor: '#E8F5E9',
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  travelAccentLine: {
+    position: 'absolute',
+    top: 0,
+    left: 24,
+    right: 24,
+    height: 3,
+    backgroundColor: '#43A047',
+    borderBottomLeftRadius: 2,
+    borderBottomRightRadius: 2,
+  },
+  travelBookingRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 14,
+  },
+  travelBookingItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flex: 1,
+  },
+  travelBookingLabel: {
+    fontSize: 11,
+    color: '#66BB6A',
+    fontWeight: '500',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  travelBookingValue: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#3D2B1F',
+    marginTop: 2,
+  },
+  travelBookingDivider: {
+    width: 1,
+    height: 36,
+    backgroundColor: '#E8F5E9',
+    marginHorizontal: 16,
+  },
+  travelNightsBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    backgroundColor: '#E8F5E9',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+    gap: 6,
+    borderWidth: 1,
+    borderColor: '#C8E6C9',
+  },
+  travelNightsBadgeText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#2E7D32',
+  },
+  travelSubSection: {
+    marginBottom: 16,
+  },
+  travelSubHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  travelSubTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#3D2B1F',
+    marginLeft: 8,
+    fontFamily: Platform.OS === 'ios' ? 'Georgia-Bold' : 'serif',
+  },
+  travelSubDesc: {
+    fontSize: 13,
+    color: '#8C7B6B',
+    marginBottom: 12,
+    lineHeight: 19,
+  },
+  travelChipsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  travelChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    borderRadius: 20,
+    backgroundColor: '#FFF',
+    borderWidth: 1.5,
+    borderColor: '#C8E6C9',
+    gap: 5,
+    shadowColor: '#2E7D32',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  travelChipSelected: {
+    backgroundColor: '#2E7D32',
+    borderColor: '#2E7D32',
+    shadowOpacity: 0.12,
+    elevation: 3,
+  },
+  travelChipText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#2E7D32',
+  },
+  travelChipTextSelected: {
+    color: '#FFF',
+  },
+  travelInputWrapper: {
+    backgroundColor: '#FFF',
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: '#E8F5E9',
+    shadowColor: '#2E7D32',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  travelInput: {
+    fontSize: 14,
+    color: '#3D2B1F',
+    paddingHorizontal: 18,
+    paddingVertical: 14,
+    minHeight: 60,
+    textAlignVertical: 'top',
+  },
+  travelPlanButton: {
+    borderRadius: 18,
+    overflow: 'hidden',
+    marginBottom: 16,
+    shadowColor: '#2E7D32',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    elevation: 5,
+  },
+  travelPlanButtonGradient: {
+    flexDirection: 'row',
+    paddingVertical: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 18,
+  },
+  travelPlanButtonText: {
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: 'bold',
+    letterSpacing: 0.3,
+  },
+  travelResultContainer: {
+    backgroundColor: '#FFF',
+    borderRadius: 22,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: '#C8E6C9',
+    shadowColor: '#2E7D32',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 16,
+    elevation: 4,
+  },
+  travelResultHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 16,
+  },
+  travelResultIconCircle: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: '#E8F5E9',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#C8E6C9',
+  },
+  travelResultTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#3D2B1F',
+    fontFamily: Platform.OS === 'ios' ? 'Georgia-Bold' : 'serif',
+  },
+  travelResultSubtitle: {
+    fontSize: 12,
+    color: '#66BB6A',
+    marginTop: 2,
+  },
+  travelResultDivider: {
+    height: 1,
+    backgroundColor: '#E8F5E9',
+    marginBottom: 16,
+  },
+  travelResultText: {
+    fontSize: 14,
+    color: '#3D2B1F',
+    lineHeight: 24,
   },
 });
